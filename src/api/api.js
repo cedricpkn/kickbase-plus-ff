@@ -46,6 +46,7 @@ const api = {
         })
     },
     async loadClubs() {
+        //everything about this is broken
         await axios({
             'url': 'https://api.kickbase.com/v4/competitions/1/table',
             "method": 'GET',
@@ -426,7 +427,7 @@ const api = {
         store.commit('addLoadingMessage', 'loading details of user')
         await axios({
             //'url': 'https://api.kickbase.com/v4/leagues/' + store.getters.getLeague + '/managers/' + store.getters.getSelf + '/dashboard',
-            'url': 'https://api.kickbase.com/v4/leagues/' + store.getters.getLeague + '/managers/' + store.getters.getSelf + '/dashboard',
+            'url': 'https://api.kickbase.com/v4/leagues/' + store.getters.getLeague + '/managers/' + store.getters.getSelf + '/performance',
             "method": "GET",
         }).then(async (profile) => {
             if (profile.data) {
