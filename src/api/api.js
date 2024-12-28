@@ -33,7 +33,7 @@ const api = {
     },
     async loadMatchDay(matchDay) {
         await axios({
-            'url': 'https://api.kickbase.com/v2/competitions/1/matches?matchDay=' + matchDay,
+            'url': 'https://api.kickbase.com/v4/competitions/1/matchdays' + matchDay,
             "method": 'GET',
             'data': {},
         }).then((gameMatchResponse) => {
@@ -47,7 +47,7 @@ const api = {
     },
     async loadClubs() {
         await axios({
-            'url': 'https://api.kickbase.com/v2/competitions/1/overview',
+            'url': 'https://api.kickbase.com/v4/competitions/1/table',
             "method": 'GET',
             'data': {},
         })
@@ -63,7 +63,7 @@ const api = {
                         let teams = [];
 
                         await axios({
-                            'url': 'https://api.kickbase.com/v2/competitions/1/matches?',
+                            'url': 'https://api.kickbase.com/v4/competitions/1/matchdays',
                             "method": 'GET',
                             'data': {},
                         }).then((nextGameMatchResponse) => {
@@ -101,7 +101,7 @@ const api = {
     async checkBonusState() {
         store.commit('addLoadingMessage', 'checking daily bonus')
         await axios({
-            'url': 'https://api.kickbase.com/leagues/' + store.getters.getLeague + '/currentgift',
+            'url': 'https://api.kickbase.com/v4/leagues/' + store.getters.getLeague + '/currentgift',
             "method": 'GET',
             'data': {},
         })
@@ -139,7 +139,7 @@ const api = {
                         }
                         if (response.data.isAvailable) {
                             axios({
-                                'url': 'https://api.kickbase.com/leagues/' + store.getters.getLeague + '/collectgift',
+                                'url': 'https://api.kickbase.com/v4/leagues/' + store.getters.getLeague + '/collectgift',
                                 "method": 'POST',
                                 'data': {},
                             })
@@ -182,20 +182,23 @@ const api = {
     },
     login() {
         axios({
-            'url': 'https://api.kickbase.com/user/login',
+            'url': 'https://api.kickbase.com/v4/user/login',
             "method": 'POST',
             'data': {
-                'email': localStorage.getItem('user'),
-                'password': localStorage.getItem('password'),
-                'ext': true,
+                'em': localStorage.getItem('user'),
+                'loy': false,
+                'pass': localStorage.getItem('password'),
+                'rep': {},
             }
         })
             .then((response) => {
+                console.log('Full Login Response:', response); // Inspect the full response
+                console.log('Response Data:', response.data); // Inspect the data object
                 if (response.status === 200) {
 
-                    if (response.data.token && response.data.tokenExp) {
-                        localStorage.setItem(Constants.LOCALSTORAGE.BEARER_TOKEN, response.data.token)
-                        localStorage.setItem(Constants.LOCALSTORAGE.BEARER_TOKEN_EXPIRATION, response.data.tokenExp)
+                    if (response.data.tkn && response.data.tknex) {
+                        localStorage.setItem(Constants.LOCALSTORAGE.BEARER_TOKEN, response.data.tkn)
+                        localStorage.setItem(Constants.LOCALSTORAGE.BEARER_TOKEN_EXPIRATION, response.data.tknex)
                         store.commit('setLoading', true)
 
                         window.location.reload()
@@ -210,7 +213,7 @@ const api = {
     },
     async loadRanking(cb) {
         axios({
-            'url': 'https://api.kickbase.com/leagues/' + store.getters.getLeague + '/stats',
+            'url': 'https://api.kickbase.com/v4/leagues/' + store.getters.getLeague + '/ranking',
             "method": "GET",
         })
             .then((response) => {
@@ -233,7 +236,7 @@ const api = {
             store.commit('addLoadingMessage', 'loading personal data. please wait')
         }
         await axios({
-            'url': 'https://api.kickbase.com/user/settings',
+            'url': 'https://api.kickbase.com/v4/user/settings',
             "method": "GET",
         })
             .then((response) => {
@@ -257,7 +260,7 @@ const api = {
         store.commit('setLoading', true)
         store.commit('addLoadingMessage', 'loading leagues. please wait')
         await axios({
-            'url': 'https://api.kickbase.com/leagues?ext=true',
+            'url': 'https://api.kickbase.com/v4/leagues/selection',
             "method": "GET",
         })
             .then((response) => {
@@ -290,7 +293,7 @@ const api = {
     async loadUsersPlayerOffers() {
         store.commit('addLoadingMessage', 'loading market offers')
         return await axios({
-            'url': 'https://api.kickbase.com/leagues/' + store.getters.getLeague + '/market',
+            'url': 'https://api.kickbase.com/v4/leagues/' + store.getters.getLeague + '/market',
             "method": "GET",
         })
             .then(async (response) => {
@@ -306,7 +309,7 @@ const api = {
     },
     async loadBids(fetchStats, cb) {
         await axios({
-            'url': 'https://api.kickbase.com/leagues/' + store.getters.getLeague + '/market',
+            'url': 'https://api.kickbase.com/v4/leagues/' + store.getters.getLeague + '/market',
             "method": "GET",
         })
             .then(async (response) => {
@@ -360,7 +363,7 @@ const api = {
 
         return await axios({
             signal: controller.signal,
-            'url': 'https://api.kickbase.com/players/' + playerId + '/points',
+            'url': 'https://api.kickbase.com/v4/players/' + playerId + '/points',
             "method": "GET",
         })
             .then((response) => {
@@ -388,7 +391,7 @@ const api = {
 
         return await axios({
             signal: controller.signal,
-            'url': 'https://api.kickbase.com/leagues/' + store.getters.getLeague + '/players/' + playerId + '/stats',
+            'url': 'https://api.kickbase.com/v4/leagues/' + store.getters.getLeague + '/players/' + playerId + '/stats',
             "method": "GET",
         })
             .then((response) => {
@@ -412,7 +415,8 @@ const api = {
     async loadUsersStats(includeUsersToUpdateBudget = false) {
         store.commit('addLoadingMessage', 'loading details of user')
         await axios({
-            'url': 'https://api.kickbase.com/leagues/' + store.getters.getLeague + '/users/' + store.getters.getSelf + '/profile',
+            //'url': 'https://api.kickbase.com/v4/leagues/' + store.getters.getLeague + '/managers/' + store.getters.getSelf + '/dashboard',
+            'url': 'https://api.kickbase.com/v4/leagues/' + store.getters.getLeague + '/managers/' + store.getters.getSelf + '/dashboard',
             "method": "GET",
         }).then(async (profile) => {
             if (profile.data) {
@@ -431,14 +435,14 @@ const api = {
     async loadUsers(justToUpdateBudget = false) {
         store.commit('addLoadingMessage', 'getting league\'s stats')
         await axios({
-            'url': 'https://api.kickbase.com/leagues/' + store.getters.getLeague + '/stats',
+            'url': 'https://api.kickbase.com/v4/leagues/' + store.getters.getLeague + '/ranking',
             "method": "GET",
         })
             .then(async (response) => {
                 if (response.status === 200) {
-                    if (response.data && response.data.users && response.data.users.length) {
-                        for (let i = 0; i < response.data.users.length; i++) {
-                            const player = response.data.users[i]
+                    if (response.data && response.data.us && response.data.us.length) {
+                        for (let i = 0; i < response.data.us.length; i++) {
+                            const player = response.data.us[i]
                             store.commit('addUser', player)
                             if (justToUpdateBudget === false) {
                                 await api.loadUsersPlayers(player.id, false)
@@ -453,7 +457,7 @@ const api = {
     },
     saveLineup(data, cb, errorCb) {
         axios({
-            'url': 'https://api.kickbase.com/leagues/' + store.getters.getLeague + '/lineup',
+            'url': 'https://api.kickbase.com/v4/leagues/' + store.getters.getLeague + '/lineup',
             "method": "POST",
             data
         })
@@ -471,7 +475,7 @@ const api = {
     },
     loadLineup(cb) {
         axios({
-            'url': 'https://api.kickbase.com/leagues/' + store.getters.getLeague + '/lineupex',
+            'url': 'https://api.kickbase.com/v4/leagues/' + store.getters.getLeague + '/lineupex',
             "method": "GET",
         })
             .then((response) => {
@@ -484,37 +488,47 @@ const api = {
             })
     },
     async loadNextTwoMatchDays() {
-        const currentMatchDay = store.getters.getNextMatchDay
-        const fetchedGameDays = []
-        if (currentMatchDay.no) {
-            fetchedGameDays.push({m: currentMatchDay.matches, md: currentMatchDay.no, d: currentMatchDay.no})
-            store.commit('addLoadingMessage', 'loading next matchdays for stats')
-            const gameDays = [currentMatchDay.no + 1, currentMatchDay.no + 2]
-            for (let i = 0; i < gameDays.length; i++) {
-                if (gameDays[i] <= 34) {
-                    const matchDay = await axios({
-                        'url': 'https://api.kickbase.com/v2/competitions/1/matches?matchDay=' + gameDays[i],
-                        "method": "GET",
+        const currentMatchDay = store.getters.getNextMatchDay;
+        const fetchedGameDays = [];
+
+        // Validate currentMatchDay
+        if (!currentMatchDay || !currentMatchDay.no) {
+            console.error('currentMatchDay is null or missing "no" property:', currentMatchDay);
+            return; // Exit the function if currentMatchDay is invalid
+        }
+
+        fetchedGameDays.push({ m: currentMatchDay.matches, md: currentMatchDay.no, d: currentMatchDay.no });
+        store.commit('addLoadingMessage', 'loading next matchdays for stats');
+        const gameDays = [currentMatchDay.no + 1, currentMatchDay.no + 2];
+
+        for (let i = 0; i < gameDays.length; i++) {
+            if (gameDays[i] <= 34) {
+                const matchDay = await axios({
+                    url: `https://api.kickbase.com/v4/competitions/1/matchdays/${gameDays[i]}`, // Fixed URL structure
+                    method: "GET",
+                })
+                    .then((response) => {
+                        if (response.data && response.data.e && response.data.e.length) {
+                            return response.data;
+                        }
                     })
-                        .then(async (response) => {
-                            if (response.data && response.data.e && response.data.e.length) {
-                                return response.data
-                            }
-                        })
-                        .catch(function () {
-                        })
-                    if (matchDay.nd) {
-                        fetchedGameDays.push({
-                            d: matchDay.day,
-                            m: matchDay.e,
-                            md: matchDay.day
-                        })
-                    }
+                    .catch((error) => {
+                        console.error('Error fetching matchday data:', error);
+                        return null; // Handle errors gracefully
+                    });
+
+                if (matchDay && matchDay.nd) {
+                    fetchedGameDays.push({
+                        d: matchDay.day,
+                        m: matchDay.e,
+                        md: matchDay.day,
+                    });
                 }
             }
         }
+
         if (fetchedGameDays.length) {
-            store.commit('setNextThreeMatchDays', fetchedGameDays)
+            store.commit('setNextThreeMatchDays', fetchedGameDays);
         }
     },
     async loadMatches(matchDay) {
@@ -524,7 +538,7 @@ const api = {
         }
         store.commit('addLoadingMessage', 'loading next matchday')
         await axios({
-            'url': 'https://api.kickbase.com/v2/competitions/1/matches' + mQuery,
+            'url': 'https://api.kickbase.com/v4/competitions/1/matchdays' + mQuery,
             "method": "GET",
         })
             .then(async (response) => {
@@ -558,7 +572,7 @@ const api = {
     },
     async loadFeed(cb) {
         await axios({
-            'url': 'https://api.kickbase.com/v2/leagues/' + store.getters.getLeague + '/feed',
+            'url': 'https://api.kickbase.com/v4/leagues/' + store.getters.getLeague + '/activitiesfeed',
             "method": "GET",
             'params': {
                 start: 0,
@@ -580,7 +594,7 @@ const api = {
     async loadUsersLineup(userId) {
         const user = userId
         await axios({
-            'url': 'https://api.kickbase.com/leagues/' + store.getters.getLeague + '/users/' + user + '/lineup',
+            'url': 'https://api.kickbase.com/v4/leagues/' + store.getters.getLeague + '/users/' + store.getters.getSelf + '/lineup',
             "method": "GET",
         }).then(async (response) => {
             if (response.status === 200) {
@@ -595,7 +609,7 @@ const api = {
         const user = userId
         store.commit('addLoadingMessage', 'loading players and lineup of user #' + user)
         await axios({
-            'url': 'https://api.kickbase.com/leagues/' + store.getters.getLeague + '/users/' + user + '/players',
+            'url': 'https://api.kickbase.com/v4/leagues/' + store.getters.getLeague + '/managers/' + store.getters.getSelf + '/lineup',
             "method": "GET",
         }).then(async (response) => {
             if (response.status === 200) {
@@ -616,7 +630,7 @@ const api = {
     },
     loadGlobalLiveData(cb) {
         axios({
-            'url': 'https://api.kickbase.com/leagues/' + store.getters.getLeague + '/live',
+            'url': 'https://api.kickbase.com/v4/leagues/' + store.getters.getLeague + '/live',
             "method": "GET",
         }).then((response) => {
             if (response.status === 200) {
@@ -633,7 +647,7 @@ const api = {
         const cb = callback
         const getBidReq = () => {
             return axios.post(
-                'https://api.kickbase.com/leagues/' + store.getters.getLeague + '/market/' + playerId + '/offers',
+                'https://api.kickbase.com/v4/leagues/' + store.getters.getLeague + '/market/' + playerId + '/offers',
                 {
                     price
                 }
@@ -684,7 +698,7 @@ const api = {
     async revokeBid(playerId, offerId, callback) {
         const cb = callback
         await axios({
-            'url': 'https://api.kickbase.com/leagues/' + store.getters.getLeague + '/market/' + playerId + '/offers/' + offerId,
+            'url': 'https://api.kickbase.com/v4/leagues/' + store.getters.getLeague + '/market/' + playerId + '/offers/' + offerId,
             "method": "DELETE"
         }).then(async (response) => {
             if (response.status === 200) {
@@ -701,7 +715,7 @@ const api = {
         let price = player.marketValue + ""
 
         await axios({
-            'url': 'https://api.kickbase.com/leagues/' + store.getters.getLeague + '/market',
+            'url': 'https://api.kickbase.com/v4/leagues/' + store.getters.getLeague + '/market',
             "method": "POST",
             'data': {
                 playerId: player.id,
@@ -724,7 +738,7 @@ const api = {
         store.commit('addLoadingMessage', 'removing player "' + player.lastName + '" from market')
         const cb = callback
         axios({
-            'url': 'https://api.kickbase.com/leagues/' + store.getters.getLeague + '/market/' + player.id,
+            'url': 'https://api.kickbase.com/v4/leagues/' + store.getters.getLeague + '/market/' + player.id,
             "method": 'DELETE',
         })
             .then((response) => {
@@ -747,7 +761,7 @@ const api = {
     },
     acceptBids(offer, callback) {
         axios({
-            'url': 'https://api.kickbase.com/leagues/' + store.getters.getLeague + '/market/' + offer.playerId + '/offers/' + offer.offerId + '/accept',
+            'url': 'https://api.kickbase.com/v4/leagues/' + store.getters.getLeague + '/market/' + offer.playerId + '/offers/' + offer.offerId + '/accept',
             "method": "POST",
         }).then((first) => {
             if (first.status === 200) {
