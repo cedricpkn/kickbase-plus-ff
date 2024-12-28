@@ -218,7 +218,7 @@ const api = {
         })
             .then((response) => {
                 if (response.status === 200) {
-                    if (response.data && response.data.users && response.data.matchDays) {
+                    if (response.data && response.data.us && response.data.day) { //where the fuck is "matchdays" in the new json? "day"? -CP
                         store.commit('setRanking', response.data)
                         if (typeof cb === 'function') {
                             cb()
@@ -241,9 +241,9 @@ const api = {
         })
             .then((response) => {
                 if (response.status === 200) {
-                    if (response.data && response.data.user && response.data.user.id) {
-                        store.commit('setSelfData', response.data.user)
-                        store.commit('setSelf', response.data.user.id * 1)
+                    if (response.data && response.data.u && response.data.user.i) {
+                        store.commit('setSelfData', response.data.u)
+                        store.commit('setSelf', response.data.user.i * 1)
                         if (typeof cb === 'function') {
                             cb()
                         }
@@ -257,38 +257,46 @@ const api = {
             })
     },
     async loadLeagues() {
-        store.commit('setLoading', true)
-        store.commit('addLoadingMessage', 'loading leagues. please wait')
+        store.commit('setLoading', true);
+        store.commit('addLoadingMessage', 'Loading leagues. Please wait...');
         await axios({
-            'url': 'https://api.kickbase.com/v4/leagues/selection',
-            "method": "GET",
+            url: 'https://api.kickbase.com/v4/leagues/selection',
+            method: 'GET',
         })
             .then((response) => {
                 if (response.status === 200) {
-                    store.commit('addLoadingMessage', 'player\'s league successfully fetched')
-                    if (response.data && response.data.leagues && response.data.leagues.length) {
-                        store.commit('setLeagues', response.data.leagues)
-                        let setLeague = null
+                    store.commit('addLoadingMessage', 'Player\'s league successfully fetched');
+                    if (response.data && response.data.it && response.data.it.length) {
+                        // Update leagues in the store
+                        store.commit('setLeagues', response.data.it);
+
+                        let setLeague = null;
+
+                        // Check for a previously selected league in localStorage
                         if (localStorage.getItem('league')) {
-                            response.data.leagues.forEach((league) => {
-                                if (league.id === localStorage.getItem('league')) {
-                                    store.commit('setLeague', league.id)
-                                    setLeague = league
+                            response.data.it.forEach((league) => {
+                                if (league.i === localStorage.getItem('league')) {
+                                    store.commit('setLeague', league.i);
+                                    setLeague = league;
                                 }
-                            })
+                            });
                         }
+
+                        // If no league is set, default to the first league
                         if (setLeague === null) {
-                            setLeague = response.data.leagues[0]
-                            localStorage.setItem('league', setLeague.id)
-                            store.commit('setLeague', setLeague.id)
+                            setLeague = response.data.it[0];
+                            localStorage.setItem('league', setLeague.i);
+                            store.commit('setLeague', setLeague.i);
                         }
-                        store.commit('addLoadingMessage', 'set league: ' + setLeague.name)
+
+                        store.commit('addLoadingMessage', 'Set league: ' + setLeague.n);
                     }
                 }
-            }).catch(function () {
-                store.commit('addErrorLoadingMessage', 'could not fetch player\'s leagues')
-                store.commit('setErrorMessage', 'could not fetch player\'s leagues')
             })
+            .catch(() => {
+                store.commit('addErrorLoadingMessage', 'Could not fetch player\'s leagues');
+                store.commit('setErrorMessage', 'Could not fetch player\'s leagues');
+            });
     },
     async loadUsersPlayerOffers() {
         store.commit('addLoadingMessage', 'loading market offers')
@@ -363,7 +371,9 @@ const api = {
 
         return await axios({
             signal: controller.signal,
-            'url': 'https://api.kickbase.com/v4/players/' + playerId + '/points',
+            //'url': 'https://api.kickbase.com/v2/players/' + playerId + '/points',
+            // /points is gone gg
+            'url': 'https://api.kickbase.com/v4/leagues/' + store.getters.getLeague + '/players' + playerId + '/performance',
             "method": "GET",
         })
             .then((response) => {
@@ -391,7 +401,7 @@ const api = {
 
         return await axios({
             signal: controller.signal,
-            'url': 'https://api.kickbase.com/v4/leagues/' + store.getters.getLeague + '/players/' + playerId + '/stats',
+            'url': 'https://api.kickbase.com/v4/leagues/' + store.getters.getLeague + '/players/' + playerId + '/performance',
             "method": "GET",
         })
             .then((response) => {
