@@ -31,9 +31,9 @@ const api = {
         }
         return false
     },
-    async loadMatchDay(matchDay) {
+    async loadMatchDay() {
         await axios({
-            'url': 'https://api.kickbase.com/v4/competitions/1/matchdays' + matchDay,
+            'url': 'https://api.kickbase.com/v4/competitions/1/matchdays',
             "method": 'GET',
             'data': {},
         }).then((gameMatchResponse) => {
