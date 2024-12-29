@@ -102,7 +102,7 @@ const api = {
     async checkBonusState() {
         store.commit('addLoadingMessage', 'checking daily bonus')
         await axios({
-            'url': 'https://api.kickbase.com/v4/leagues/' + store.getters.getLeague + '/currentgift',
+            'url': 'https://api.kickbase.com/v4/bonus/collect',
             "method": 'GET',
             'data': {},
         })
@@ -140,7 +140,7 @@ const api = {
                         }
                         if (response.data.isAvailable) {
                             axios({
-                                'url': 'https://api.kickbase.com/v4/leagues/' + store.getters.getLeague + '/collectgift',
+                                'url': 'https://api.kickbase.com/v4/bonus/collect',
                                 "method": 'POST',
                                 'data': {},
                             })
@@ -241,10 +241,11 @@ const api = {
             "method": "GET",
         })
             .then((response) => {
+                console.log("userdata", response)
                 if (response.status === 200) {
-                    if (response.data && response.data.u && response.data.user.i) {
+                    if (response.data && response.data.u && response.data.u.i) {
                         store.commit('setSelfData', response.data.u)
-                        store.commit('setSelf', response.data.user.i * 1)
+                        store.commit('setSelf', response.data.u.i * 1)
                         if (typeof cb === 'function') {
                             cb()
                         }
@@ -267,6 +268,7 @@ const api = {
             .then((response) => {
                 if (response.status === 200) {
                     store.commit('addLoadingMessage', 'Player\'s league successfully fetched');
+                    console.log('Leagues', response.data);
                     if (response.data && response.data.it && response.data.it.length) {
                         // Update leagues in the store
                         store.commit('setLeagues', response.data.it);
@@ -361,6 +363,7 @@ const api = {
             })
     },
     async loadPlayersPoints(playerId) {
+        console.log("playerids", playerId)
         const rId = 'p' + playerId
         const controller = new AbortController();
 
@@ -399,7 +402,6 @@ const api = {
         }
 
         this.requestStack[playerId] = controller
-
         return await axios({
             signal: controller.signal,
             'url': 'https://api.kickbase.com/v4/leagues/' + store.getters.getLeague + '/players/' + playerId + '/performance',
@@ -430,13 +432,16 @@ const api = {
             'url': 'https://api.kickbase.com/v4/leagues/' + store.getters.getLeague + '/managers/' + store.getters.getSelf + '/performance',
             "method": "GET",
         }).then(async (profile) => {
+            console.log("Profile",profile)
             if (profile.data) {
                 if (includeUsersToUpdateBudget === true) {
+                    console.log("loadUsers")
                     await api.loadUsers(includeUsersToUpdateBudget)
                 }
                 const userX = Object.assign(store.getters.getUsersDetails, profile.data)
+                console.log("userX", userX)
                 store.commit('addUser', userX)
-                await api.loadUsersPlayers(userX.id, true)
+                await api.loadUsersPlayers(userX.u, true)
             }
         })
             .catch(function () {
@@ -450,16 +455,20 @@ const api = {
             "method": "GET",
         })
             .then(async (response) => {
+                console.log('Users', response)
                 if (response.status === 200) {
+
                     if (response.data && response.data.us && response.data.us.length) {
                         for (let i = 0; i < response.data.us.length; i++) {
                             const player = response.data.us[i]
+                            console.log("Test ", player)
                             store.commit('addUser', player)
                             if (justToUpdateBudget === false) {
-                                await api.loadUsersPlayers(player.id, false)
+                                await api.loadUsersPlayers(player.i, false)
                             }
                         }
                     }
+                    
                 }
             })
             .catch(function () {
@@ -486,7 +495,7 @@ const api = {
     },
     loadLineup(cb) {
         axios({
-            'url': 'https://api.kickbase.com/v4/leagues/' + store.getters.getLeague + '/lineupex',
+            'url': 'https://api.kickbase.com/v4/leagues/' + store.getters.getLeague + '/lineup',
             "method": "GET",
         })
             .then((response) => {
@@ -515,11 +524,11 @@ const api = {
         for (let i = 0; i < gameDays.length; i++) {
             if (gameDays[i] <= 34) {
                 const matchDay = await axios({
-                    url: `https://api.kickbase.com/v4/competitions/1/matchdays/${gameDays[i]}`, // Fixed URL structure
+                    url: `https://api.kickbase.com/v4/competitions/1/matchdays/`,
                     method: "GET",
                 })
                     .then((response) => {
-                        if (response.data && response.data.e && response.data.e.length) {
+                        if (response.data && response.data.it && response.data.it.length == 34) {
                             return response.data;
                         }
                     })
@@ -527,12 +536,11 @@ const api = {
                         console.error('Error fetching matchday data:', error);
                         return null; // Handle errors gracefully
                     });
-
-                if (matchDay && matchDay.nd) {
+                if (matchDay) {
                     fetchedGameDays.push({
-                        d: matchDay.day,
-                        m: matchDay.e,
-                        md: matchDay.day,
+                        d: gameDays[i],
+                        m: matchDay.it[gameDays[i]].it,
+                        md: gameDays[i],
                     });
                 }
             }
@@ -543,27 +551,30 @@ const api = {
         }
     },
     async loadMatches(matchDay) {
-        let mQuery = ''
-        if (matchDay) {
-            mQuery = '?matchDay=' + matchDay
-        }
+        // This is some of the most atrocious code I have ever seen
         store.commit('addLoadingMessage', 'loading next matchday')
         await axios({
-            'url': 'https://api.kickbase.com/v4/competitions/1/matchdays' + mQuery,
+            'url': 'https://api.kickbase.com/v4/competitions/1/matchdays',
             "method": "GET",
         })
+        // This will give you the current matchday (response.data.day), as well as an array containing all matchdays with all matches (response.data.it)
             .then(async (response) => {
-                if (response.data && response.data.e && response.data.e.length) {
-                    const lastMatch = response.data.e[response.data.e.length - 1]
-                    if (moment(lastMatch.d).isSameOrAfter(new Date(), 'day') === true) {
+                console.log('Matches', response)
+                // no idea why this works
+                if (response.data && response.data.it && response.data.it.length == 34) {
+                    matchDay = response.data.day // the current match day
+                    const lastMatch = response.data.it[matchDay - 1].it[response.data.it[matchDay - 1].it.length - 1] // the last match of the current matchday
+                    // to be honest, I dont understand whats happening here but it works somehow
+                    if (moment(lastMatch.dt).isSameOrAfter(new Date(), 'day') === true) {
                         const lNextDay = store.getters.getNextMatchDay
-                        const nextGameDay = Object.assign(lNextDay, {
+                        const nextGameDay =  { ...lNextDay,
                             no: response.data.day,
-                            ts: response.data.e[0].d,
-                            nts: moment(response.data.e[0].d),
-                            matches: response.data.e
-                        })
-                        const matches = response.data.e.map((match) => {
+                            ts: response.data.it[matchDay - 1].day,
+                            nts: moment(response.data.it[matchDay - 1].day),
+                            matches: response.data.it[matchDay - 1].it
+                            
+                        };
+                        const matches = response.data.it[matchDay - 1].it.map((match) => {
                             match.md = response.data.day
                             return match
                         })
@@ -605,13 +616,14 @@ const api = {
     async loadUsersLineup(userId) {
         const user = userId
         await axios({
-            'url': 'https://api.kickbase.com/v4/leagues/' + store.getters.getLeague + '/users/' + store.getters.getSelf + '/lineup',
+            'url': 'https://api.kickbase.com/v4/leagues/' + store.getters.getLeague + '/users/' + user + '/teamcenter',
             "method": "GET",
         }).then(async (response) => {
+            console.log('Lineup', response)
             if (response.status === 200) {
                 store.commit('addUsersLineup', {
                     user,
-                    data: response.data
+                    data: response.data.lp
                 })
             }
         })
@@ -620,39 +632,91 @@ const api = {
         const user = userId
         store.commit('addLoadingMessage', 'loading players and lineup of user #' + user)
         await axios({
-            'url': 'https://api.kickbase.com/v4/leagues/' + store.getters.getLeague + '/managers/' + store.getters.getSelf + '/lineup',
+            'url': 'https://api.kickbase.com/v4/leagues/' + store.getters.getLeague + '/managers/' + user + '/squad',
             "method": "GET",
         }).then(async (response) => {
+            console.log('Players', response)
             if (response.status === 200) {
                 store.commit('addUsersPlayer', {
                     user,
-                    players: response.data.players
+                    players: response.data.it
                 })
+                console.log('Players', loadPlayerStates)
                 if (loadPlayerStates === true) {
                     const playerIds = []
-                    for (let i = 0; i < response.data.players.length; i++) {
-                        playerIds.push(response.data.players[i].id)
+                    for (let i = 0; i < response.data.it.length; i++) {
+                        playerIds.push(response.data.it[i].pi)
                     }
+                    console.log('PlayerIds', playerIds)
                     await api.loadUsersLineup(user)
                     await smartPlayerStatsLoading(playerIds)
                 }
             }
         })
     },
-    loadGlobalLiveData(cb) {
+    // because the old live api endpoint is gone, we need to do crazy shit
+    loadGlobalLiveData() {
+        //first, get each users lineup in the league
+        let uspl = {}
+        // this will hold the return data
+        let returndata = {}
         axios({
-            'url': 'https://api.kickbase.com/v4/leagues/' + store.getters.getLeague + '/live',
+            'url': 'https://api.kickbase.com/v4/leagues/' + store.getters.getLeague + '/ranking',
             "method": "GET",
-        }).then((response) => {
-            if (response.status === 200) {
-                if (response.data) {
-                    store.commit('setLiveData', response.data)
-                }
-                if (typeof cb === 'function') {
-                    cb()
-                }
-            }
         })
+            .then(async (response) => {
+                console.log('Users', response)
+                if (response.status === 200) {
+                    if (response.data && response.data.us && response.data.us.length) {
+                        for (let i = 0; i < response.data.us.length; i++) {
+                            const player = response.data.us[i]
+                            uspl[player.i] = player.lp // this is a key-value storage with the key being the userid and the values being the lineup
+                            console.log("Test ", uspl)
+
+                        }
+                    }
+                    
+                }
+                let counter = 1
+                for (var key in uspl){
+                    let lineup = uspl[key]
+                    returndata[key] = {t: 0, pl:[], st: counter}
+                    let sum = 0
+                    let promises = lineup.map(player => {
+                        return axios({
+                            url: `https://api.kickbase.com/v4/competitions/1/playercenter/${player}`,
+                            method: "GET",
+                        })
+                        .then(response => {
+                            if (response.status === 200) {
+                                if (!response.data.p) {
+                                    response.data.p = 0;
+                                }
+                                sum += response.data.p; // Update the total sum
+                                let playerName = response.data.n; // Player name
+                                let playerPoints = response.data.p; // Player points
+                                returndata[key].pl.push({ n: playerName, p: playerPoints });
+                            }
+                        })
+                        .catch(error => {
+                            console.error(`Error fetching data for player ${player}:`, error);
+                        });
+                    });
+                
+                    // Wait for all promises to resolve before setting returndata[key].t
+                    await Promise.all(promises);
+                    returndata[key].t = sum;
+                    console.log("returndata", returndata);
+                counter++
+            }
+            
+            })
+            .catch(function () {
+                store.commit('setErrorMessage', 'could not fetch league stats')
+            })
+        // next, loop through all users and players to get their points
+        console.log("uspl", uspl)
+        
     },
     sendBid(playerId, price, callback, multi, errorCb) {
         const cb = callback

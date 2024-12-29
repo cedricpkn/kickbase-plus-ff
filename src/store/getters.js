@@ -49,11 +49,12 @@ function getLeague(state) {
 function getSelectedLeague(state) {
   let league = null
   if (state.leagues && state.leagues.length && state.league) {
-    const sLeague = state.leagues.filter((l) => l.id === state.league)
+    const sLeague = state.leagues.filter((l) => l.i === state.league)
     if (sLeague.length === 1) {
       league = sLeague[0]
     }
   }
+  console.log('getSelectedLeague', league)
   return league
 }
 

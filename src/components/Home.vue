@@ -6,7 +6,7 @@
           <table class="tbl">
             <tr>
               <th class="pa-2 blue-grey lighten-3 text-left">Name:</th>
-              <td class="pa-2 blue-grey darken-1 white--text text-left">{{ getSelectedLeague.name }}</td>
+              <td class="pa-2 blue-grey darken-1 white--text text-left">{{ getSelectedLeague.n }}</td>
             </tr>
             <tr>
               <th class="pa-2 blue-grey lighten-3 text-left">created by:</th>
@@ -40,16 +40,16 @@
           :key="i"
           @click="setLeague(item)"
         >
-          <v-list-item-icon v-if="item.ci" class="mr-5">
+          <v-list-item-icon v-if="item.f" class="mr-5">
             <v-avatar>
               <img
-                :src="item.ci"
+                :src="item.f"
               >
             </v-avatar>
           </v-list-item-icon>
           <v-list-item-content>
             <v-list-item-title>
-              <span v-text="item.name"></span>
+              <span v-text="item.n"></span>
             </v-list-item-title>
           </v-list-item-content>
         </v-list-item>

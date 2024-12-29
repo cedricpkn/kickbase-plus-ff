@@ -86,9 +86,11 @@ export default {
         }
       }
   ),
-  computed: {
+  asyncComputed: {
     ...mapGetters(['getLiveData']),
     getUsers() {
+      console.log("tsetst", this.getLiveData)
+      console.log("True", this.getLiveData && this.getLiveData.u && this.getLiveData.u.length)
       if (this.getLiveData && this.getLiveData.u && this.getLiveData.u.length) {
         const users = this.getLiveData.u
         users.sort((a, b) => {
