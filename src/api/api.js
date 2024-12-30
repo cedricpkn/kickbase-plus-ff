@@ -656,10 +656,13 @@ const api = {
     },
     // because the old live api endpoint is gone, we need to do crazy shit
     loadGlobalLiveData() {
+        return new Promise((resolve, reject) => {
         //first, get each users lineup in the league
         let uspl = {}
         // this will hold the return data
-        let returndata = {}
+        let returnData = {}
+        // this is a key-value store for user-id and user-name
+        let nameId = {}
         axios({
             'url': 'https://api.kickbase.com/v4/leagues/' + store.getters.getLeague + '/ranking',
             "method": "GET",
@@ -669,8 +672,9 @@ const api = {
                 if (response.status === 200) {
                     if (response.data && response.data.us && response.data.us.length) {
                         for (let i = 0; i < response.data.us.length; i++) {
-                            const player = response.data.us[i]
-                            uspl[player.i] = player.lp // this is a key-value storage with the key being the userid and the values being the lineup
+                            const user = response.data.us[i]
+                            uspl[user.i] = user.lp // this is a key-value storage with the key being the userid and the values being the lineup
+                            nameId[user.i] = response.data.us[i].n
                             console.log("Test ", uspl)
 
                         }
@@ -680,7 +684,7 @@ const api = {
                 let counter = 1
                 for (var key in uspl){
                     let lineup = uspl[key]
-                    returndata[key] = {t: 0, pl:[], st: counter}
+                    returnData[key] = {t: 0, pl:[], st: counter, n: nameId[key]}
                     let sum = 0
                     let promises = lineup.map(player => {
                         return axios({
@@ -695,7 +699,7 @@ const api = {
                                 sum += response.data.p; // Update the total sum
                                 let playerName = response.data.n; // Player name
                                 let playerPoints = response.data.p; // Player points
-                                returndata[key].pl.push({ n: playerName, p: playerPoints });
+                                returnData[key].pl.push({ n: playerName, p: playerPoints });
                             }
                         })
                         .catch(error => {
@@ -705,18 +709,18 @@ const api = {
                 
                     // Wait for all promises to resolve before setting returndata[key].t
                     await Promise.all(promises);
-                    returndata[key].t = sum;
-                    console.log("returndata", returndata);
+                    returnData[key].t = sum;
+                    console.log("returndata", returnData);
                 counter++
             }
-            
+            store.commit('setLiveData', returnData);
+            resolve(returnData);
             })
-            .catch(function () {
+            .catch(function (error) {
                 store.commit('setErrorMessage', 'could not fetch league stats')
+                reject(error);
             })
-        // next, loop through all users and players to get their points
-        console.log("uspl", uspl)
-        
+        });
     },
     sendBid(playerId, price, callback, multi, errorCb) {
         const cb = callback

@@ -65,9 +65,9 @@ export default {
           {
             text: 'Name',
             align: 'start',
-            value: 'displayName',
+            value: 'n',
           },
-          {text: 'Points', value: 't'},
+          {text: 'Points', value: 'p'},
           {text: 'Goals', value: 'g', align: ' d-none d-md-table-cell'},
           {text: 'Assists', value: 'a', align: ' d-none d-md-table-cell'},
           {text: 'Yellow-Card', value: 'y', mobile: false, align: ' d-none d-md-table-cell'},
@@ -86,44 +86,26 @@ export default {
         }
       }
   ),
-  asyncComputed: {
+  computed: {
     ...mapGetters(['getLiveData']),
     getUsers() {
       console.log("tsetst", this.getLiveData)
       console.log("True", this.getLiveData && this.getLiveData.u && this.getLiveData.u.length)
-      if (this.getLiveData && this.getLiveData.u && this.getLiveData.u.length) {
-        const users = this.getLiveData.u
-        users.sort((a, b) => {
-          if (a.t > b.t) {
-            return -1
-          } else if (a.t < b.t) {
-            return 1
-          }
-          if (a.t === b.t) {
-            if (a.st > b.st) {
-              return -1
-            } else if (a.st < b.st) {
-              return 1
-            }
-          }
-          return 0
+      const liveData = this.getLiveData
+      console.log("tsetst", liveData)
+      if (liveData && Object.keys(liveData).length) {
+        const users = Object.entries(liveData).map(([id, userData]) => ({
+          id,
+          n: userData.n || 'Unknown',
+          t: userData.t,
+          st: userData.st,
+          pl: userData.pl
+        }))
+        
+        return users.sort((a, b) => {
+          if (a.t !== b.t) return b.t - a.t
+          return a.st - b.st
         })
-
-        users.forEach((user) => {
-          if (user.pl.length) {
-            user.pl.forEach((player) => {
-              let displayName = ''
-              if (player.fn) {
-                displayName += player.fn + ' '
-              }
-              displayName += `${player.n} (${player.nr})`
-
-              player.displayName = displayName
-            })
-          }
-        })
-
-        return users
       }
       return []
     }
@@ -135,17 +117,17 @@ export default {
     }, 2000)
   },
   methods: {
-    reload() {
+    async reload() {
       this.loading = true
-      api.loadGlobalLiveData(() => {
-        window.setTimeout(() => {this.loading = false}, 200)
-
+      await api.loadGlobalLiveData().then(() => {
+        window.setTimeout(() => { this.loading = false }, 200)
+      }).catch(error => {
+        console.error('Error loading live data:', error)
+        this.loading = false
       })
     },
     numberOfPlayersWhoScored(players) {
-      return players.filter((p) => {
-        return p.t !== 0
-      }).length
+      return players.filter(p => p.p !== 0).length
     }
   }
 };

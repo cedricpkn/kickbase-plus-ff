@@ -91,6 +91,7 @@ export default {
     },
     activeLeague() {
       let league = null
+      console.log("this.getLeagues", this.getLeagues , this.getLeagues.length , this.getLeague)
       if (this.getLeagues && this.getLeagues.length && this.getLeague) {
         this.getLeagues.forEach((element, i) => {
           if (element.id === this.getLeague) {
@@ -109,7 +110,7 @@ export default {
     setLeague(league) {
       this.setLoadingMessages([])
       this.setLoading(true)
-      localStorage.setItem('league', league.id)
+      localStorage.setItem('league', league.i)
       window.location.reload()
     }
   }
