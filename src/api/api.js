@@ -248,7 +248,6 @@ const api = {
             "method": "GET",
         })
             .then((response) => {
-                console.log("userdata", response)
                 if (response.status === 200) {
                     if (response.data && response.data.u && response.data.u.i) {
                         store.commit('setSelfData', response.data.u)
@@ -370,7 +369,6 @@ const api = {
             })
     },
     async loadPlayersPoints(playerId) {
-        console.log("playerids", playerId)
         const rId = 'p' + playerId
         const controller = new AbortController();
 
@@ -434,48 +432,76 @@ const api = {
     },
     async loadUsersStats(includeUsersToUpdateBudget = false) {
         store.commit('addLoadingMessage', 'loading details of user')
+        let userbudget = 0
+        // expected return json:
+        // {data:
+        //      {b: "Budget",
+        //       mppu: "Max players per user",
+        //       mpst: "Max players from one club",
+        //       }
+        // } mppu and mpst are not used yet, but might be in the future
         await axios({
-            //'url': 'https://api.kickbase.com/v4/leagues/' + store.getters.getLeague + '/managers/' + store.getters.getSelf + '/dashboard',
-            'url': 'https://api.kickbase.com/v4/leagues/' + store.getters.getLeague + '/managers/' + store.getters.getSelf + '/performance',
+            'url' : 'https://api.kickbase.com/v4/leagues/' + store.getters.getLeague + '/me',
             "method": "GET",
-        }).then(async (profile) => {
-            console.log("Profile", profile)
-            if (profile.data) {
-                if (includeUsersToUpdateBudget === true) {
-                    console.log("loadUsers")
-                    await api.loadUsers(includeUsersToUpdateBudget)
+        }).then(async (response) => {
+            if (response.status === 200) {
+                if (response.data && response.data.b) {
+                    userbudget = response.data.b
                 }
-                const userX = Object.assign(store.getters.getUsersDetails, profile.data)
-                console.log("userX", userX)
-                store.commit('addUser', userX)
-                await api.loadUsersPlayers(userX.u, true)
             }
         })
+        // expected return json:
+        // {data:
+        //      {u: "User Id",
+        //       unm: "User Name",
+        //       tv: "Team Value"
+        //      }
+        // }
+        await axios({
+            'url': 'https://api.kickbase.com/v4/leagues/' + store.getters.getLeague + '/managers/' + store.getters.getSelf + '/dashboard',
+            "method": "GET",
+        })
+            .then(async (profile) => {
+                if (profile.data) {
+                    if (includeUsersToUpdateBudget === true) {
+                        await api.loadUsers(includeUsersToUpdateBudget)
+                    }
+                    profile.data.budget = userbudget
+                    const userX = Object.assign(store.getters.getUsersDetails, profile.data)
+                    store.commit('addUser', userX)
+                    await api.loadUsersPlayers(userX.u, true)
+                }
+            })
             .catch(function () {
                 store.commit('setErrorMessage', 'could not fetch own profile')
             });
     },
     async loadUsers(justToUpdateBudget = false) {
         store.commit('addLoadingMessage', 'getting league\'s stats')
+        // expected return json:
+        // {data:
+        //      {us:
+        //          {0:
+        //              {i: "User ID",
+        //               n: "User Name",
+        //               }
+        //           }
+        //       }
         await axios({
             'url': 'https://api.kickbase.com/v4/leagues/' + store.getters.getLeague + '/ranking',
             "method": "GET",
         })
             .then(async (response) => {
-                console.log('Users', response)
                 if (response.status === 200) {
-
                     if (response.data && response.data.us && response.data.us.length) {
                         for (let i = 0; i < response.data.us.length; i++) {
                             const player = response.data.us[i]
-                            console.log("Test ", player)
                             store.commit('addUser', player)
                             if (justToUpdateBudget === false) {
                                 await api.loadUsersPlayers(player.i, false)
                             }
                         }
                     }
-
                 }
             })
             .catch(function () {
@@ -639,28 +665,37 @@ const api = {
     async loadUsersPlayers(userId, loadPlayerStates = true) {
         const user = userId
         store.commit('addLoadingMessage', 'loading players and lineup of user #' + user)
+        // expected return json:
+        // {data:
+        //      {it:
+        //          {0:
+        //              {pi: "Player ID",
+        //               n: "Player Name",
+        //               p: "Player Position",
+        //               }
+        //           }
+        //       }
+        // }
         await axios({
             'url': 'https://api.kickbase.com/v4/leagues/' + store.getters.getLeague + '/managers/' + user + '/squad',
             "method": "GET",
-        }).then(async (response) => {
-            console.log('Players', response)
-            if (response.status === 200) {
-                store.commit('addUsersPlayer', {
-                    user,
-                    players: response.data.it
-                })
-                console.log('Players', loadPlayerStates)
-                if (loadPlayerStates === true) {
-                    const playerIds = []
-                    for (let i = 0; i < response.data.it.length; i++) {
-                        playerIds.push(response.data.it[i].pi)
-                    }
-                    console.log('PlayerIds', playerIds)
-                    await api.loadUsersLineup(user)
-                    await smartPlayerStatsLoading(playerIds)
-                }
-            }
         })
+            .then(async (response) => {
+                if (response.status === 200) {
+                    store.commit('addUsersPlayer', {
+                        user,
+                        players: response.data.it
+                    })
+                    if (loadPlayerStates === true) {
+                        const playerIds = []
+                        for (let i = 0; i < response.data.it.length; i++) {
+                            playerIds.push(response.data.it[i].pi)
+                        }
+                        await api.loadUsersLineup(user)
+                        await smartPlayerStatsLoading(playerIds)
+                    }
+                }
+            })
     },
     // because the old live api endpoint is gone, we need to do crazy shit
     // load all users and their players, then load the point data for all players

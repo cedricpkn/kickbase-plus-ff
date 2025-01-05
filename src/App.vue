@@ -277,7 +277,7 @@ export default {
       let details = ''
       if (this.getUsersDetails && this.getUsersDetails.budget) {
         details += 'Budget: ' + numeral(this.getUsersDetails.budget).format('0,0')
-        details += '&nbsp; / Team: ' + numeral(this.getUsersDetails.teamValue).format('0,0')
+        details += '&nbsp; / Team: ' + numeral(this.getUsersDetails.tv).format('0,0')
       }
 
       if (this.getBids && this.getUsersDetails) {
@@ -315,7 +315,7 @@ export default {
     selectedLeague() {
       let league = null
       if (this.getLeagues && this.getLeagues.length && this.getLeague) {
-        const sLeague = this.getLeagues.filter((l) => l.id === this.getLeague)
+        const sLeague = this.getLeagues.filter((l) => l.i === this.getLeague)
         if (sLeague.length === 1) {
           league = sLeague[0]
         }
@@ -323,7 +323,7 @@ export default {
       return league
     },
     leagueName() {
-      return this.selectedLeague ? this.selectedLeague.name : null
+      return this.selectedLeague ? this.selectedLeague.n : null
     },
     version() {
       return process.env.VUE_APP_VERSION ? process.env.VUE_APP_VERSION : 'unknown'
