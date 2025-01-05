@@ -3,8 +3,15 @@ import moment from 'moment'
 
 import store from '../store/store'
 import Constants from "../Constants";
-import {sleep, smartPlayerStatsLoading} from "@/helper/helper";
-
+import { sleep, smartPlayerStatsLoading } from "@/helper/helper";
+// this holds the id, definition pairs for point events
+// ideally you would call the api to get this but for now this will suffice
+let pointEvents = {45: "Cross", 46: "Forward zone pass", 47: "Accurate Keeper-Sweeper (GK)", 48: "Accurate Throw (GK)", 49: "Accurate long Ball", 50: "Deadly Pass", 52: "Aerial lost", 79: "Aerial won", 80: "Rebound Assist", 81: "Rebound Assist", 82: "Own Goal forced", 83: "Deflected Assist", 84: "Woodwork Assist", 86: "Bonus: long range", 87: "Penalty scored", 88: "Penalty missed", 89: "Penalty missed", 90: "Penalty missed", 91: "Post", 92: "Left Post", 93: "Right Post", 94: "Back Pass Foul (GK)", 96: "Big Chance Created", 98: "Big Chance Created", 99: "Big Chance Created", 100: "Big Chance Created", 101: "Big Chance Created", 102: "Big Chance Created", 103: "Big Chance missed", 104: "Cross blocked", 106: "Challenge lost", 107: "Cleared on the Line", 108: "Cross not claimed (GK)", 109: "Dangerous play", 110: "Dive Catch (GK)", 111: "Dive Save (GK)", 112: "Cross blocked and Possession", 113: "Cleared", 114: "Mistake before Goal", 115: "Mistake before Shot", 116: "Incorrect Throw-In", 117: "Foul", 118: "Fouled last third", 120: "Intentional Assist", 121: "Cross Intercepted (GK)", 122: "One-on-One", 123: "Hand Ball", 124: "Interception", 125: "Ball intercepted", 126: "Interception in Box", 127: "Bonus: Last Man Tackle", 130: "Overrun", 131: "own goal", 132: "Penalty conceded", 133: "Penalty saved (GK)", 134: "Penalty won", 135: "Punched Ball (GK)", 136: "Red Card", 137: "Shot saved (GK)", 138: "Distance Shot saved (GK)", 139: "2nd Yellow", 141: "6 Sec violation (GK)", 142: "Standing saved (GK)", 143: "Pass final Third", 144: "Shot Assist", 147: "Offside", 148: "Offside", 149: "Shot on goal", 152: "Contest won", 153: "Corner won", 154: "Tackle won", 155: "Yellow Card", 156: "Starting 11", 157: "Possession lost", 159: "Team Goal", 160: "Goal conceded", 165: "Game Won", 166: "Game Lost", 167: "Played Minutes Bonus", 168: "Team Goal", 169: "Goal conceded", 170: "Team Goal", 171: "Goal conceded", 173: "Goal (GK)", 174: "Goal (Midfielder)", 175: "Goal (Defender)", 176: "Goal (Striker)", 177: "Assist (GK)", 178: "Assist (Defender)", 179: "Assist (Midfielder)", 180: "Assist (Striker)", 181: "Goal Set up (GK)", 182: "Goal Set up (Defender)", 183: "Goal Set up (Midfielder)", 184: "Goal Set up (Striker)", 185: "Goal (Substitute)", 186: "Assist (Substitute)", 187: "Goal Set up (Substitute)", 188: "Clean Sheet (GK)", 189: "Clean Sheet (Defender)", 190: "Clean Sheet (Midfielder)", 191: "Clean Sheet (Striker)", 194: "Big Chance saved (GK)", 195: "Ball covered unchallenged (GK)", 196: "Ball covered challenged (GK)", 197: "Shot on Target (narrow miss)", 199: "Shot on Goal (far away)", 200: "Shot on Target (blocked)", 203: "Penalty saved (penalty shoot-out)", 204: "Penalty missed (penalty shoot-out)", 205: "Penalty scored (penalty shoot-out)", 206: "Shot blocked", 207: "Shot blocked", 208: "Shot blocked", "-1": "Eingewechselt", "-2": "Ausgewechselt", "-8": "Von Anfang an gespielt", "-7": "Auf Bank", "-10": "Erste Halbzeit des Spiels beendet", "-17": "Zweite Halbzeit des Spiels beendet"};
+let goalEventIds = [173, 174, 175, 176, 185]
+let assistEventIds = [177, 178, 179, 180, 186]
+let yellowCardEventId = 155
+let secondYellowCardEventId = 139
+let redCardEventId = 136
 axios.interceptors.response.use(function (response) {
     return response;
 }, function (error) {
@@ -227,9 +234,9 @@ const api = {
                     }
                 }
             }).catch(function () {
-            store.commit('addErrorLoadingMessage', 'could not fetch ranking')
-            store.commit('setErrorMessage', 'could not fetch ranking')
-        })
+                store.commit('addErrorLoadingMessage', 'could not fetch ranking')
+                store.commit('setErrorMessage', 'could not fetch ranking')
+            })
     },
     async loadPersonalData(cb, showLoading = true) {
         if (showLoading) {
@@ -313,9 +320,9 @@ const api = {
                     return response.data
                 }
             }).catch(function () {
-            store.commit('addErrorLoadingMessage', 'could not fetch player\'s offers')
-            store.commit('setErrorMessage', 'could not fetch player\'s offers')
-        })
+                store.commit('addErrorLoadingMessage', 'could not fetch player\'s offers')
+                store.commit('setErrorMessage', 'could not fetch player\'s offers')
+            })
 
     },
     async loadBids(fetchStats, cb) {
@@ -432,7 +439,7 @@ const api = {
             'url': 'https://api.kickbase.com/v4/leagues/' + store.getters.getLeague + '/managers/' + store.getters.getSelf + '/performance',
             "method": "GET",
         }).then(async (profile) => {
-            console.log("Profile",profile)
+            console.log("Profile", profile)
             if (profile.data) {
                 if (includeUsersToUpdateBudget === true) {
                     console.log("loadUsers")
@@ -468,7 +475,7 @@ const api = {
                             }
                         }
                     }
-                    
+
                 }
             })
             .catch(function () {
@@ -557,7 +564,7 @@ const api = {
             'url': 'https://api.kickbase.com/v4/competitions/1/matchdays',
             "method": "GET",
         })
-        // This will give you the current matchday (response.data.day), as well as an array containing all matchdays with all matches (response.data.it)
+            // This will give you the current matchday (response.data.day), as well as an array containing all matchdays with all matches (response.data.it)
             .then(async (response) => {
                 console.log('Matches', response)
                 // no idea why this works
@@ -567,12 +574,13 @@ const api = {
                     // to be honest, I dont understand whats happening here but it works somehow
                     if (moment(lastMatch.dt).isSameOrAfter(new Date(), 'day') === true) {
                         const lNextDay = store.getters.getNextMatchDay
-                        const nextGameDay =  { ...lNextDay,
+                        const nextGameDay = {
+                            ...lNextDay,
                             no: response.data.day,
                             ts: response.data.it[matchDay - 1].day,
                             nts: moment(response.data.it[matchDay - 1].day),
                             matches: response.data.it[matchDay - 1].it
-                            
+
                         };
                         const matches = response.data.it[matchDay - 1].it.map((match) => {
                             match.md = response.data.day
@@ -655,71 +663,97 @@ const api = {
         })
     },
     // because the old live api endpoint is gone, we need to do crazy shit
+    // load all users and their players, then load the point data for all players
     loadGlobalLiveData() {
         return new Promise((resolve, reject) => {
-        //first, get each users lineup in the league
-        let uspl = {}
-        // this will hold the return data
-        let returnData = {}
-        // this is a key-value store for user-id and user-name
-        let nameId = {}
-        axios({
-            'url': 'https://api.kickbase.com/v4/leagues/' + store.getters.getLeague + '/ranking',
-            "method": "GET",
-        })
-            .then(async (response) => {
-                console.log('Users', response)
+            let uspl = {} // this is a key-value store with the key being the userid and the values being the lineup
+            let returnData = {} // this will hold the return data
+            let nameId = {} // this is a key-value store for user-id and user-name
+            let totalpl = {} // this will hold the current place of the user
+            // expected return json: 
+            // {data:
+            //      {us:
+            //          {0:
+            //              {i: "User ID",
+            //               n: "User Name",
+            //               lp: "Users Lineup WARNING!! If the game day has not started this will be empty. "
+            //              }
+            //           }
+            //       }
+            // }
+            axios({
+                'url': 'https://api.kickbase.com/v4/leagues/' + store.getters.getLeague + '/ranking',
+                "method": "GET",
+            }).then(async (response) => {
                 if (response.status === 200) {
-                    if (response.data && response.data.us && response.data.us.length) {
+                    if (response.data && response.data.us && response.data.us.length) { // loop through all users
                         for (let i = 0; i < response.data.us.length; i++) {
                             const user = response.data.us[i]
-                            uspl[user.i] = user.lp // this is a key-value storage with the key being the userid and the values being the lineup
-                            nameId[user.i] = response.data.us[i].n
-                            console.log("Test ", uspl)
-
+                            uspl[user.i] = user.lp // users lineup
+                            nameId[user.i] = user.n // this matches the user-id to the user name
+                            totalpl[user.i] = user.spl // this is the current place of the user
                         }
                     }
-                    
                 }
-                let counter = 1
-                for (var key in uspl){
+                for (var key in uspl) { // loop through all users
                     let lineup = uspl[key]
-                    returnData[key] = {t: 0, pl:[], st: counter, n: nameId[key]}
+                    returnData[key] = { t: 0, pl: [], st: totalpl[key], n: nameId[key] }
                     let sum = 0
                     let promises = lineup.map(player => {
+                        // expected return json: 
+                        // {data:
+                        //      {p: "Points",
+                        //       n: "Player Name",
+                        //       events: [ei: "Event ID", eti: "Event Type ID", p: "Current points", mt: "Minute"]
+                        //      }
+                        // }
                         return axios({
                             url: `https://api.kickbase.com/v4/competitions/1/playercenter/${player}`,
                             method: "GET",
-                        })
-                        .then(response => {
+                        }).then(response => {
                             if (response.status === 200) {
                                 if (!response.data.p) {
                                     response.data.p = 0;
                                 }
+                                // go through the list of events and filter for goals, assists etc.
+                                const goalEvents = response.data.events.filter(event => goalEventIds.includes(event.eti));
+                                const assistEvents = response.data.events.filter(event => assistEventIds.includes(event.eti));
+                                const yellowCardEvents = response.data.events.filter(event => event.eti === yellowCardEventId);
+                                const redCardEvents = response.data.events.filter(event => event.eti === redCardEventId);
+                                const secondYellowCardEvents = response.data.events.filter(event => event.eti === secondYellowCardEventId);
+                                
+                                let playerEvents = response.data.events.map(event => {
+                                    const eventMinute = event.mt;
+                                    const eventTypeId = event.eti;
+                                    const eventPoints = event.p;
+                                    const eventDesc = pointEvents[eventTypeId] || 'Unknown';
+                                    return { mt: eventMinute, p: eventPoints, eti: eventDesc };
+                                }).sort((a, b) => b.mt - a.mt); // This generates a sorted list of events with the current points, the event and the minute
+
                                 sum += response.data.p; // Update the total sum
                                 let playerName = response.data.n; // Player name
                                 let playerPoints = response.data.p; // Player points
-                                returnData[key].pl.push({ n: playerName, p: playerPoints });
+                                
+                                returnData[key].pl.push({ n: playerName, p: playerPoints, g: goalEvents.length, 
+                                    a: assistEvents.length, y: yellowCardEvents.length + secondYellowCardEvents.length, 
+                                    r: redCardEvents.length, yr: secondYellowCardEvents.length, events: playerEvents });
                             }
                         })
-                        .catch(error => {
-                            console.error(`Error fetching data for player ${player}:`, error);
-                        });
+                            .catch(error => {
+                                console.error(`Error fetching data for player ${player}:`, error);
+                            });
                     });
-                
                     // Wait for all promises to resolve before setting returndata[key].t
                     await Promise.all(promises);
                     returnData[key].t = sum;
-                    console.log("returndata", returnData);
-                counter++
-            }
-            store.commit('setLiveData', returnData);
-            resolve(returnData);
+                }
+                store.commit('setLiveData', returnData);
+                resolve(returnData);
             })
-            .catch(function (error) {
-                store.commit('setErrorMessage', 'could not fetch league stats')
-                reject(error);
-            })
+                .catch(function (error) {
+                    store.commit('setErrorMessage', 'could not fetch league stats')
+                    reject(error);
+                });
         });
     },
     sendBid(playerId, price, callback, multi, errorCb) {
