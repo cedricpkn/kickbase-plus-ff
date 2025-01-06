@@ -20,10 +20,10 @@
             <tbody>
                 <tr
                 v-for="item in items"
-                :key="item.name"
+                :key="item.n"
                 >
                     <td>
-                        <span v-if="item.knownName">{{ item.knownName }}</span>
+                        <span v-if="item.n">{{ item.n }}</span>
                         <span v-else>{{ item.firstName }} {{ item.lastName }}</span>
                     </td>
                     <td>{{ item.totalPoints }}</td>

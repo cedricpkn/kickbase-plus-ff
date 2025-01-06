@@ -532,6 +532,7 @@ const api = {
             "method": "GET",
         })
             .then((response) => {
+                console.log("Lineup", response)
                 if (response.status === 200) {
                     cb(response.data)
                 }

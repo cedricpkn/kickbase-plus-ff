@@ -25,7 +25,7 @@
         <div class="position__container position--forwards">
           <lineup-item
               v-for="forward in lineupBlocks.forwards"
-              :key="forward.id"
+              :key="forward.i"
               :item="forward"
               :matches="getMatches"
               v-on:openChangeDialog="openChangeDialog"
@@ -205,29 +205,31 @@ export default {
     ]),
     goalies() {
       let goalies = []
+      console.log("Players", this.players)
       if (this.players.length) {
-        goalies = this.players.filter((item) => item.position === 1).sort(this.sort)
+        goalies = this.players.filter((item) => item.pos === 1).sort(this.sort)
+        console.log("sdfsdfsdf", goalies)
       }
       return goalies
     },
     defenders() {
       let defenders = []
       if (this.players.length) {
-        defenders = this.players.filter((item) => item.position === 2).sort(this.sort)
+        defenders = this.players.filter((item) => item.pos === 2).sort(this.sort)
       }
       return defenders
     },
     midfielders() {
       let midfielders = []
       if (this.players.length) {
-        midfielders = this.players.filter((item) => item.position === 3).sort(this.sort)
+        midfielders = this.players.filter((item) => item.pos === 3).sort(this.sort)
       }
       return midfielders
     },
     forwards() {
       let forwards = []
       if (this.players.length) {
-        forwards = this.players.filter((item) => item.position === 4).sort(this.sort)
+        forwards = this.players.filter((item) => item.pos === 4).sort(this.sort)
       }
       return forwards
     },
@@ -235,9 +237,9 @@ export default {
       const players = []
       if (this.goalies.length) {
         if (this.lineup.length) {
-          this.lineup.forEach((id) => {
+          this.lineup.forEach((i) => {
             this.goalies.forEach(player => {
-              if (id === player.id) {
+              if (i === player) {
                 players.push(player)
               }
             });
@@ -258,7 +260,7 @@ export default {
         if (this.lineup.length) {
           this.lineup.forEach((id) => {
             this.defenders.forEach(player => {
-              if (id === player.id && players.length < this.positions.defenders) {
+              if (id === player && players.length < this.positions.defenders) {
                 players.push(player)
               }
             });
@@ -279,7 +281,7 @@ export default {
         if (this.lineup.length) {
           this.lineup.forEach((id) => {
             this.midfielders.forEach(player => {
-              if (id === player.id && players.length < this.positions.midfielders) {
+              if (id === player && players.length < this.positions.midfielders) {
                 players.push(player)
               }
             });
@@ -300,7 +302,7 @@ export default {
         if (this.lineup.length) {
           this.lineup.forEach((id) => {
             this.forwards.forEach(player => {
-              if (id === player.id && players.length < this.positions.forwards) {
+              if (id === player && players.length < this.positions.forwards) {
                 players.push(player)
               }
             });
@@ -333,31 +335,20 @@ export default {
       })
     },
     parseLineup(data) {
-      if (data.type === undefined) {
-        this.formation = '3-5-2'
-        const dummy = {position: 'dummy'}
-        this.lineupBlocks.goalie = [null]
-        this.lineupBlocks.defenders = [null, null, null]
-        this.lineupBlocks.midfielders = [null, null, null, null, null]
-        this.lineupBlocks.forwards = [null, null]
-        this.saveLineup({}, dummy)
-      } else if (data.lineup && data.players) {
-        this.players = data.players
-
-        if (data.type) {
-          this.formation = data.type
-          const positions = this.formation.split('-')
-          this.positions.defenders = positions[0] * 1
-          this.positions.midfielders = positions[1] * 1
-          this.positions.forwards = positions[2] * 1
-        }
-        this.lineup = data.lineup
-
-        this.lineupBlocks.goalie = this.linedUpGoalie
-        this.lineupBlocks.defenders = this.linedUpDefenders
-        this.lineupBlocks.midfielders = this.linedUpMidfielders
-        this.lineupBlocks.forwards = this.linedUpForwards
-      }
+      this.players = data.it
+      this.lineup = data.it.filter((item) => item.lo != null)
+      console.log("Lineup", this.lineup)
+      this.formation = this.lineup.filter((item) => item.pos === 2).length + '-' + this.lineup.filter((item) => item.pos === 3).length + '-' + this.lineup.filter((item) => item.pos === 4).length
+      const positions = this.formation.split('-')
+      this.positions.defenders = positions[0] * 1
+      this.positions.midfielders = positions[1] * 1
+      this.positions.forwards = positions[2] * 1
+      this.lineupBlocks.goalie = this.linedUpGoalie
+      this.lineupBlocks.defenders = this.linedUpDefenders
+      this.lineupBlocks.midfielders = this.linedUpMidfielders
+      this.lineupBlocks.forwards = this.linedUpForwards
+      console.log(this.lineupBlocks)
+      
     },
     sort(a, b) {
       if (a.totalPoints < b.totalPoints) {
@@ -457,10 +448,10 @@ export default {
     playerName(player) {
       let name = ''
       if (player) {
-        if (player.knownName) {
-          name = player.knownName
+        if (player.n) {
+          name = player.n
         } else {
-          name = player.firstName + ' ' + player.lastName
+          name = player.n
         }
       }
       return name
@@ -483,13 +474,13 @@ export default {
       let players = []
       if (player) {
         if (player.position === 1) {
-          players = this.goalies.filter((p) => p.id !== player.id)
+          players = this.goalies.filter((p) => p.i !== player.i)
         } else if (player.position === 2) {
-          players = this.defenders.filter((p) => p.id !== player.id)
+          players = this.defenders.filter((p) => p.i !== player.i)
         } else if (player.position === 3) {
-          players = this.midfielders.filter((p) => p.id !== player.id)
+          players = this.midfielders.filter((p) => p.i !== player.i)
         } else if (player.position === 4) {
-          players = this.forwards.filter((p) => p.id !== player.id)
+          players = this.forwards.filter((p) => p.i !== player.i)
         }
         players = players.filter((p) => this.lineup.indexOf(p.id) === -1)
       }
