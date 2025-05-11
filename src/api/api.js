@@ -571,11 +571,15 @@ const api = {
                         return null; // Handle errors gracefully
                     });
                 if (matchDay) {
-                    fetchedGameDays.push({
-                        d: gameDays[i],
-                        m: matchDay.it[gameDays[i]].it,
-                        md: gameDays[i],
-                    });
+                    const targetMd = gameDays[i];
+                    const mdObject = matchDay.it.find(md => md.md === targetMd);
+                    if (mdObject) {
+                        fetchedGameDays.push({
+                            d: mdObject.md,
+                            m: mdObject.it, // matches for that day
+                            md: mdObject.md,
+                        });
+                    }
                 }
             }
         }
